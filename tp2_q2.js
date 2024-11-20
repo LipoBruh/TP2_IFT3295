@@ -61,8 +61,6 @@ class AminoScore{
     map_AA_scores(numbers){
         const aminoAcids = ["A", "R", "N", "D", "C", "Q", "E", "G", "H", "I", "L", "K", "M", "F", "P", "S", "T", "W", "Y", "V", "B", "Z", "X", "*"];
         if (numbers.length != aminoAcids.length){
-            //console.log(numbers)
-            //console.log(aminoAcids)
             return null
         }
         var iterator=0
@@ -142,7 +140,13 @@ class BlosumMatrixParser{
             var numbers = this.get_array_at_row_n(i)
             var symbol = numbers[0].toString()
             //construct aminoscore obj
-            numbers =  numbers.splice(1,numbers.length -2)
+            if(numbers[numbers.length-1]==""){
+                
+                numbers =  numbers.splice(1,numbers.length -2)
+            }
+            else{
+                numbers =  numbers.splice(1,numbers.length -1)
+            }
             var obj = new AminoScore(symbol)
             obj.map_AA_scores(numbers)
             //
@@ -153,7 +157,32 @@ class BlosumMatrixParser{
 }
 
 
+
+
+/*
+Rappel sur la matière sur BLOSUM
+
+BLOCK = petit site très conservé évolutivement
+BLOSUM = Procure des matrices de probablité d'échange d'un aa à un autre
+BLOSUM80 = Matrice construite à partir de séquences 80% identiques
+
+
+Différences par rapport à PAM:
+Table générées via séquences hautement conservées basées sur le % d'identité plutôt que la fréquence de mutations / distance évolutive
+Ne s'intéresse pas au lien évolutif comme PAM
+On cherche un alignement local dans un sous-domaine
+Les matrices sont issues des données, PAM extrapole les matrices via PAM1
+BLOSUM62 est utilisé dans l'alignement BLAST
+
+
+Score(aa1,aa2) = Fréquence observée de (aa1,aa2) / (Fréquence(aa1)*Fréquence(aa2))
+
+Un score positif signifie que pour des séquences avec un minimum d'identité (%)
+le changement se produit plus fréquemment que le hasard le prévoit.
+*/
+
+
 //Utilisation du parsers et de l'objet blosumMatrix : 
 var parser = new BlosumMatrixParser("./BLOSUM62.txt")
 var blosumMatrix = parser.construct_matrix()
-console.log(blosumMatrix.get_pair_score("V","S"))
+console.log(blosumMatrix.get_pair_score("A","S"))
