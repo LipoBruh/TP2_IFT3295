@@ -240,8 +240,7 @@ function makeArray(rows,cols,value){
 
 
 function LevensteinDistance(seq1,seq2){
-
-
+    //
     var dp = makeArray(seq1.length+1,seq2.length+1,0) //array of zeros
     for(var i = 0; i < dp.length; i++){
         dp[i][0]=i //first row = 0,1,2,3...
@@ -270,15 +269,77 @@ function LevensteinDistance(seq1,seq2){
 
 
 
+function distanceEdition(sequences){
+    //
+    var ed = makeArray(sequences.length,sequences.length,0)
+
+    for(var i=0; i<sequences.length; i++){
+        for(var j=0; j<sequences.length; j++){
+            if(i==j){
+                continue
+            }
+            ed[i][j]=LevensteinDistance(sequences[j],sequences[i])
+        }
+    
+    }
+    return ed;
+
+}
+
+function sequenceCentrale(sequences){
+    //
+    var de = distanceEdition(sequences)
+    //
+    var min_score = 10000000000000
+    var best_seq = null
+    //
+    var it=0
+    de.forEach(col=>{
+        var score = 0
+        col.forEach(value=>{score+=value})
+        if (score<min_score){
+            min_score=score
+            best_seq=sequences[it]
+        }
+        it+=1
+    })
+    console.log(`best score ${min_score} with sequence ${best_seq} `)
+    return best_seq
+}
+
+function LevensteinDistance(seq1,seq2){
+    //
+    var dp = makeArray(seq1.length+1,seq2.length+1,0) //array of zeros
+    for(var i = 0; i < dp.length; i++){
+        dp[i][0]=i //first row = 0,1,2,3...
+        if (i==0){
+            for(var j=0;j<dp[i].length;j++){  //first col = 0,1,2,3...
+                dp[i][j]=j
+            }
+        }
+    }
+    //dp array should be ready at this step
+    //
+    //recursive step :
+    for (var i = 1; i < dp.length; i++) {
+        for (var j = 1; j < dp[i].length; j++) {
+            //
+            var case1 = dp[i-1][j]+1
+            var case2 = dp[i][j-1]+1
+            var case3 = 0
+            seq1[i]==seq2[j]?case3=dp[i-1][j-1]:case3=dp[i-1][j-1]+1
+
+            dp[i][j] = Math.min(case1,case2,case3);
+        }
+    }
+    return dp[dp.length-1][dp[dp.length-1].length-1] //return bottom right value
+}
+
+class Alignment{
 
 
 
-
-
-
-
-
-
+}
 
 
 //Utilisation du parsers et de l'objet blosumMatrix : 
@@ -288,8 +349,7 @@ console.log(blosumMatrix.get_pair_score("A","S"))
 
 var parser2 = new FastaParser("./sequences.fasta")
 var sequences = parser2.list_sequences()
-console.log(sequences[0])
-console.log(sequences[1])
 
-console.log(LevensteinDistance(sequences[0],sequences[1]))
 
+
+sequenceCentrale(sequences)
