@@ -220,6 +220,67 @@ le changement se produit plus fréquemment que le hasard le prévoit.
 */
 
 
+
+//-----------------------------------------Fin parsers
+
+
+//Start algos------------------------------
+
+
+function makeArray(rows,cols,value){
+    var array = []
+    for (var i = 0; i < rows; i++) {
+        array.push([])
+        for (var j = 0; j < cols; j++) {
+            array[i].push(value);
+        }
+    }
+    return array
+}
+
+
+function LevensteinDistance(seq1,seq2){
+
+
+    var dp = makeArray(seq1.length+1,seq2.length+1,0) //array of zeros
+    for(var i = 0; i < dp.length; i++){
+        dp[i][0]=i //first row = 0,1,2,3...
+        if (i==0){
+            for(var j=0;j<dp[i].length;j++){  //first col = 0,1,2,3...
+                dp[i][j]=j
+            }
+        }
+    }
+    //dp array should be ready at this step
+    //
+    //recursive step :
+    for (var i = 1; i < dp.length; i++) {
+        for (var j = 1; j < dp[i].length; j++) {
+            //
+            var case1 = dp[i-1][j]+1
+            var case2 = dp[i][j-1]+1
+            var case3 = 0
+            seq1[i]==seq2[j]?case3=dp[i-1][j-1]:case3=dp[i-1][j-1]+1
+
+            dp[i][j] = Math.min(case1,case2,case3);
+        }
+    }
+    return dp[dp.length-1][dp[dp.length-1].length-1] //return bottom right value
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //Utilisation du parsers et de l'objet blosumMatrix : 
 var parser = new BlosumMatrixParser("./BLOSUM62.txt")
 var blosumMatrix = parser.construct_matrix()
@@ -227,4 +288,8 @@ console.log(blosumMatrix.get_pair_score("A","S"))
 
 var parser2 = new FastaParser("./sequences.fasta")
 var sequences = parser2.list_sequences()
+console.log(sequences[0])
 console.log(sequences[1])
+
+console.log(LevensteinDistance(sequences[0],sequences[1]))
+
