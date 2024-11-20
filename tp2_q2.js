@@ -158,6 +158,44 @@ class BlosumMatrixParser{
 
 
 
+class FastaParser{
+    constructor(path="./sequences.fasta"){
+        this.path=path
+        this.data=""
+        this.lines=[]
+        this.sequences=[]
+        this.init()
+    }
+
+    init(){
+        try{
+            const data = fs.readFileSync(this.path, 'utf8');
+            this.data = data.toString()
+            this.lines = this.data.split("\n")
+            //console.log("init done")
+          } 
+          catch (err) {
+            console.error(err);
+            }
+        }
+    
+    readLine(i){
+        return this.lines[i]
+    }
+
+    list_sequences(){
+        var sequences = []
+        for(var i = 0; i<this.lines.length; i++)
+            if (this.lines[i].includes(">")){
+
+                var sequence = this.lines[i+1]+this.lines[i+2]+this.lines[i+3]
+                sequences.push(sequence);
+                i+=3
+            }
+        return sequences
+    }
+}
+
 
 /*
 Rappel sur la matière sur BLOSUM
@@ -186,3 +224,7 @@ le changement se produit plus fréquemment que le hasard le prévoit.
 var parser = new BlosumMatrixParser("./BLOSUM62.txt")
 var blosumMatrix = parser.construct_matrix()
 console.log(blosumMatrix.get_pair_score("A","S"))
+
+var parser2 = new FastaParser("./sequences.fasta")
+var sequences = parser2.list_sequences()
+console.log(sequences[1])
