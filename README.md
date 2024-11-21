@@ -16,3 +16,6 @@ Q2.5 is missing
 
 Q3.1 is done
 Q3.2 is missing (lack of valid data from Q2)
+
+Also available on github 
+https://github.com/LipoBruh/TP2_IFT3295
