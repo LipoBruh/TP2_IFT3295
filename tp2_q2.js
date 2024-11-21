@@ -307,39 +307,160 @@ function sequenceCentrale(sequences){
     return best_seq
 }
 
-function LevensteinDistance(seq1,seq2){
-    //
-    var dp = makeArray(seq1.length+1,seq2.length+1,0) //array of zeros
-    for(var i = 0; i < dp.length; i++){
-        dp[i][0]=i //first row = 0,1,2,3...
-        if (i==0){
-            for(var j=0;j<dp[i].length;j++){  //first col = 0,1,2,3...
-                dp[i][j]=j
+
+
+class Alignement{
+    constructor(score,seq1,seq2){
+        this.score = score
+        this.original_seq1=seq1
+        this.original_seq2=seq2
+        this.seq1=""
+        this.seq2=""
+
+    }
+
+
+    traceback(M, X, Y, gapOpen, gapExtend, blosumMatrix) {
+        let i = this.original_seq1.length;
+        let j = this.original_seq2.length;
+    
+        // Determine the starting matrix based on the maximum score at (n, m)
+        let currentMatrix = "M";
+        let maxScore = Math.max(M[i][j], X[i][j], Y[i][j]);
+        if (maxScore === X[i][j]) currentMatrix = "X";
+        if (maxScore === Y[i][j]) currentMatrix = "Y";
+    
+        while (i > 0 || j > 0) {
+            if (currentMatrix === "M") {
+                // match/Mismatch
+                const matchScore = Number(blosumMatrix.get_pair_score(this.original_seq1[i - 1], this.original_seq2[j - 1]));
+    
+                if (i > 0 && j > 0 && M[i][j] === M[i - 1][j - 1] + matchScore) {
+                    // No gap
+                    this.seq1 = this.original_seq1[i - 1] + this.seq1;
+                    this.seq2 = this.original_seq2[j - 1] + this.seq2;
+                    i--;
+                    j--;
+                } else if (i > 0 && j > 0 && M[i][j] === X[i - 1][j - 1] + matchScore) {
+                    currentMatrix = "X";
+                } else if (i > 0 && j > 0 && M[i][j] === Y[i - 1][j - 1] + matchScore) {
+                    currentMatrix = "Y";
+                }
+            } else if (currentMatrix === "X") {
+                // gap in seq2
+                if (j > 0 && X[i][j] === M[i][j - 1] - gapOpen) {
+                    currentMatrix = "M";
+                } else if (j > 0 && X[i][j] === X[i][j - 1] - gapExtend) {
+                }
+                this.seq1 = "-" + this.seq1;
+                this.seq2 = this.original_seq2[j - 1] + this.seq2;
+                j--;
+            } else if (currentMatrix === "Y") {
+                // gap in seq1
+                if (i > 0 && Y[i][j] === M[i - 1][j] - gapOpen) {
+                    currentMatrix = "M";
+                } else if (i > 0 && Y[i][j] === Y[i - 1][j] - gapExtend) {
+                }
+                this.seq1 = this.original_seq1[i - 1] + this.seq1;
+                this.seq2 = "-" + this.seq2;
+                i--;
+            }
+    
+            // Handle edge cases for the first row or column
+            if (i === 0 && j > 0) {
+                this.seq1 = "-".repeat(j) + this.seq1;
+                this.seq2 = this.original_seq2.slice(0, j) + this.seq2;
+                break;
+            }
+            if (j === 0 && i > 0) {
+                this.seq1 = this.original_seq1.slice(0, i) + this.seq1;
+                this.seq2 = "-".repeat(i) + this.seq2;
+                break;
             }
         }
+    
+        // Log the final alignment
+        this.log_alignment();
     }
-    //dp array should be ready at this step
-    //
-    //recursive step :
-    for (var i = 1; i < dp.length; i++) {
-        for (var j = 1; j < dp[i].length; j++) {
-            //
-            var case1 = dp[i-1][j]+1
-            var case2 = dp[i][j-1]+1
-            var case3 = 0
-            seq1[i]==seq2[j]?case3=dp[i-1][j-1]:case3=dp[i-1][j-1]+1
+    
 
-            dp[i][j] = Math.min(case1,case2,case3);
+
+    log_alignment(){
+        const reference = `${this.original_seq1}\n${this.original_seq2}\n\n\n`
+        const alignment = `${this.seq1}\n${this.seq2}\nscore: ${this.score}`;
+        const content = reference+alignment
+        // Write to a file
+        fs.writeFile('output.txt', content, (err) => {
+            if (err) {
+                console.error('Error writing to file:', err);
+            }
+        });
+
+    }
+}
+
+class MultipleAlignment{
+    constructor(){
+        this.aligned_sequences=[]
+    }
+}
+
+
+
+
+// this video https://www.youtube.com/watch?v=DQQ_q2dn2ds gives a great example
+// on how to incoporate affine gap penalties to needlemanWunch
+function needlemanWunschAffine(s1, s2, blosumMatrix, gapOpen=10, gapExtend=1) {
+    const n = s1.length;
+    const m = s2.length;
+
+    // Initialize matrices
+    const M = makeArray(s1.length+1,s2.length+1,-Infinity) 
+    const X = makeArray(s1.length+1,s2.length+1,-Infinity)
+    const Y = makeArray(s1.length+1,s2.length+1,-Infinity)
+
+
+    // Initialize base cases
+    M[0][0] = 0;
+    for (let i = 1; i <= n; i++) {
+        X[i][0] = -gapOpen - (i - 1) * gapExtend;
+    }
+    for (let j = 1; j <= m; j++) {
+        Y[0][j] = -gapOpen - (j - 1) * gapExtend;
+    }
+
+
+    // Fill using the reccurence formula from https://www.youtube.com/watch?v=DQQ_q2dn2ds
+    for (let i = 1; i <= n; i++) {
+        for (let j = 1; j <= m; j++) {
+            const matchScore = Number(blosumMatrix.get_pair_score(s1[i - 1], s2[j - 1]))
+
+            // Calculate M(i, j)
+            M[i][j] = Math.max(
+                M[i - 1][j - 1] + matchScore,
+                X[i - 1][j - 1] + matchScore,
+                Y[i - 1][j - 1] + matchScore
+            );
+            // Calculate X(i, j)
+            X[i][j] = Math.max(
+                M[i - 1][j] - gapOpen,
+                X[i - 1][j] - gapExtend
+            );
+
+            // Calculate Y(i, j)
+            Y[i][j] = Math.max(
+                M[i][j - 1] - gapOpen,
+                Y[i][j - 1] - gapExtend
+            );
         }
+        
     }
-    return dp[dp.length-1][dp[dp.length-1].length-1] //return bottom right value
+
+    var alignement = new Alignement(Math.max(M[n][m], X[n][m], Y[n][m]),s1,s2)
+    alignement.traceback(M,X,Y,gapOpen,gapExtend,blosumMatrix)
+    return alignement
 }
 
-class Alignment{
-
-
-
-}
 
 
 //Utilisation du parsers et de l'objet blosumMatrix : 
@@ -353,3 +474,8 @@ var sequences = parser2.list_sequences()
 
 
 sequenceCentrale(sequences)
+
+var alignment = needlemanWunschAffine(sequences[0],sequences[1],blosumMatrix,10,1)
+console.log("...")
+console.log(alignment.seq1)
+console.log(alignment.seq2)
