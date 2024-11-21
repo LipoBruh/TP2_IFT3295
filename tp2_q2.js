@@ -268,7 +268,7 @@ function LevensteinDistance(seq1,seq2){
 }
 
 
-
+//Question 1.1
 function distanceEdition(sequences){
     //
     var ed = makeArray(sequences.length,sequences.length,0)
@@ -286,6 +286,9 @@ function distanceEdition(sequences){
 
 }
 
+
+
+//QUESTION 2.2
 function sequenceCentrale(sequences){
     //
     var de = distanceEdition(sequences)
@@ -390,7 +393,7 @@ class Alignement{
         const alignment = `${this.seq1}\n${this.seq2}\nscore: ${this.score}`;
         const content = reference+alignment
         // Write to a file
-        fs.writeFile('output.txt', content, (err) => {
+        fs.writeFile(`output${this.score}.txt`, content, (err) => {
             if (err) {
                 console.error('Error writing to file:', err);
             }
@@ -400,14 +403,38 @@ class Alignement{
 }
 
 class MultipleAlignment{
-    constructor(){
-        this.aligned_sequences=[]
+    constructor(main_sequence){
+        this.main_sequence=main_sequence
+        this.aligned_sequences=[main_sequence]
+    }
+
+    add_sequence(sequence){
+        this.aligned_sequences.push(sequence)
+    }
+    add_gap(index){
+        this.aligned_sequences.forEach(seq=>{
+            seq=seq.substring(0,index)+"_"+seq.substring(index,seq.length-1)
+        })
+    }
+
+    update_alignment(new_main_sequence,new_sequence){
+        var index=0
+        for(let i = 0; i<new_main_sequence.length;i++){
+            if (new_main_sequence[i]===this.main_sequence[index]){
+            }
+            else{
+                this.add_gap(index)
+            }
+            index++
+        }
+
+    this.add_sequence(new_sequence)
     }
 }
 
 
 
-
+//Question 1.1 aussi
 // this video https://www.youtube.com/watch?v=DQQ_q2dn2ds gives a great example
 // on how to incoporate affine gap penalties to needlemanWunch
 function needlemanWunschAffine(s1, s2, blosumMatrix, gapOpen=10, gapExtend=1) {
@@ -461,7 +488,44 @@ function needlemanWunschAffine(s1, s2, blosumMatrix, gapOpen=10, gapExtend=1) {
     return alignement
 }
 
+class StarTreeAlignment{
+    constructor(center,blosum){
+        this.blosum = blosum
+        this.center = center
+        this.alignement_multiple = new MultipleAlignment(center)
+        this.score=0
+    }
 
+    align_all(list){
+        list.forEach(seq=>{
+            if (seq === center){return}
+            //console.log("trace")
+            var alignment = needlemanWunschAffine(this.center,seq,blosumMatrix)
+            this.alignement_multiple.update_alignment(alignment.seq1,alignment.seq2)
+            this.score+=alignment.score
+        })
+        this.log_alignment()
+        console.log(this.score)
+    }
+
+    log_alignment(){
+        var text=""
+        this.alignement_multiple.aligned_sequences.forEach(seq=>{
+            this.text+=seq+"\n"
+        })
+        const reference = `${this.text}\n\n\n`
+        const alignment = `score: ${this.score}`;
+        const content = reference+alignment
+        // Write to a file
+        fs.writeFile(`output${this.score}.txt`, content, (err) => {
+            if (err) {
+                console.error('Error writing to file:', err);
+            }
+        });
+
+    }
+
+}
 
 //Utilisation du parsers et de l'objet blosumMatrix : 
 var parser = new BlosumMatrixParser("./BLOSUM62.txt")
@@ -471,11 +535,18 @@ console.log(blosumMatrix.get_pair_score("A","S"))
 var parser2 = new FastaParser("./sequences.fasta")
 var sequences = parser2.list_sequences()
 
+//Q2.1
+console.log(distanceEdition(sequences))
 
+//Q2.2
+var center = sequenceCentrale(sequences)
 
-sequenceCentrale(sequences)
+//Q2.3
+var alignment_multiple = new StarTreeAlignment(center,blosumMatrix)
+alignment_multiple.align_all(sequences)
 
-var alignment = needlemanWunschAffine(sequences[0],sequences[1],blosumMatrix,10,1)
-console.log("...")
-console.log(alignment.seq1)
-console.log(alignment.seq2)
+//Q2.4
+console.log(alignment_multiple.score)
+
+//Q2.5
+///out of time to complete
